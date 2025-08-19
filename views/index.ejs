@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Chat App</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+      <div class="container mt-2">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="chat-container d-flex flex-column">
+                    <!-- Chat Header -->
+                    <div class="chat-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Voice Chat</h5>
+                        <div>
+                            <span class="badge bg-light text-dark">
+                                <i class="fas fa-circle text-success me-1"></i> Online
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Messages Container -->
+                    <div class="messages-container d-flex flex-column">
+                        <!-- Received Message -->
+                        <div class="message p-3 rounded audio-message received">
+                            <i class="fa-solid fa-robot"></i>
+                            <div>
+                                <small class="text-muted">Assitants | 2 days ago</small>
+                                <div>
+                                    Lorem, ipsum dolor sit amet consectetur adipisicing elit. Consequatur dolorem laudantium accusantium cum rem incidunt, nemo recusandae omnis? Tempore repudiandae sunt dolorem fugit consequuntur harum aut, quasi tenetur distinctio magnam sit qui quia sequi laudantium illum. Eligendi vitae autem expedita maiores magni quia, voluptatibus quam quasi saepe odit ipsa porro!
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sent Message -->
+                        <div class="message p-3 rounded audio-message sent">
+                            <div>
+                                <small class="text-muted">You, 10:32 AM</small>
+                                <div class="waveform mt-1">
+                                    <div class="wave" style="left: 5%; animation-delay: 0s;"></div>
+                                    <div class="wave" style="left: 10%; animation-delay: 0.1s;"></div>
+                                    <div class="wave" style="left: 15%; animation-delay: 0.2s;"></div>
+                                    <div class="wave" style="left: 20%; animation-delay: 0.3s;"></div>
+                                    <div class="wave" style="left: 25%; animation-delay: 0.4s;"></div>
+                                    <div class="wave" style="left: 30%; animation-delay: 0.5s;"></div>
+                                    <div class="wave" style="left: 35%; animation-delay: 0.6s;"></div>
+                                    <div class="wave" style="left: 40%; animation-delay: 0.7s;"></div>
+                                    <div class="wave" style="left: 45%; animation-delay: 0.8s;"></div>
+                                    <div class="wave" style="left: 50%; animation-delay: 0.9s;"></div>
+                                    <div class="wave" style="left: 55%; animation-delay: 1.0s;"></div>
+                                    <div class="wave" style="left: 60%; animation-delay: 1.1s;"></div>
+                                    <div class="wave" style="left: 65%; animation-delay: 1.2s;"></div>
+                                    <div class="wave" style="left: 70%; animation-delay: 1.3s;"></div>
+                                    <div class="wave" style="left: 75%; animation-delay: 1.4s;"></div>
+                                    <div class="wave" style="left: 80%; animation-delay: 1.5s;"></div>
+                                    <div class="wave" style="left: 85%; animation-delay: 1.6s;"></div>
+                                    <div class="wave" style="left: 90%; animation-delay: 1.7s;"></div>
+                                    <div class="wave" style="left: 95%; animation-delay: 1.8s;"></div>
+                                    <div class="wave" style="left: 100%; animation-delay: 1.9s;"></div>
+                                    
+                                </div>
+                                <small class="text-muted">0:08</small>
+                            </div>
+                            <i class="fas fa-microphone ms-2"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Voice Controls -->
+                    <div class="voice-controls">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="flex-grow-1 mx-3">
+                                <div class="waveform" id="recording-waveform">
+                                    <!-- Recording visualization would appear here -->
+                                    <p class="text-center text-muted my-2" id="status">Press and hold to record,release to send</p>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-center pb-2">
+                                <button id="record-button" class="btn btn-danger rounded-circle">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+         // DOM elements
+    const recordButton = document.getElementById('record-button');
+    const waveform = document.getElementById('recording-waveform');
+    const statusElement = document.getElementById('status') || createStatusElement();
+    
+    // Audio recording variables
+    let mediaRecorder;
+    let audioChunks = [];
+    let animationInterval;
+    let waves = [];
+    
+    // Event listeners
+    recordButton.addEventListener('touchstart', startRecording);
+    recordButton.addEventListener('mousedown', startRecording);
+    recordButton.addEventListener('mouseup', stopRecording);
+    recordButton.addEventListener('mouseleave', stopRecording);
+    recordButton.addEventListener('touchend', stopRecording);
+    
+    // For touch devices
+    recordButton.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        startRecording();
+    });
+    recordButton.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        stopRecording();
+    });
+    
+    function createStatusElement() {
+        const el = document.createElement('div');
+        el.id = 'status';
+        document.body.appendChild(el);
+        return el;
+    }
+    
+    // Waveform animation functions
+    function createWaveformVisualization() {
+        waveform.innerHTML = '';
+        waves = [];
+        
+        // Create 60 wave bars for visualization
+        for (let i = 0; i < 60; i++) {
+            const wave = document.createElement('div');
+            wave.className = 'wave';
+            wave.style.left = (i * (100/60)) + '%';
+            wave.style.height = (Math.random() * 30 + 20) + '%';
+            waveform.appendChild(wave);
+            waves.push(wave);
+        }
+        
+        // Animate the waves
+        animationInterval = setInterval(animateWaves, 100);
+    }
+    
+    function animateWaves() {
+        waves.forEach(wave => {
+            wave.style.height = (Math.random() * 60 + 20) + '%';
+        });
+    }
+    
+    function clearWaveformAnimation() {
+        clearInterval(animationInterval);
+        waveform.innerHTML = '<p class="text-center text-muted my-2">Press and hold to record</p>';
+    }
+    
+    // Audio recording functions
+    async function startRecording() {
+        try {
+            // UI changes
+            recordButton.classList.add('active', 'recording');
+            statusElement.textContent = 'Recording...';
+            createWaveformVisualization();
+            
+            // Access microphone
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // Setup media recorder
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+            
+            mediaRecorder.start();
+            
+        } catch (error) {
+            console.error('Recording error:', error);
+            statusElement.textContent = 'Error: ' + error.message;
+            stopRecording();
+        }
+    }
+    
+    function stopRecording() {
+        // Check if actually recording
+        if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+            return;
+        }
+        
+        // Stop recording
+        mediaRecorder.stop();
+        clearWaveformAnimation();
+        
+        // UI changes
+        recordButton.classList.remove('active', 'recording');
+        statusElement.textContent = 'Processing...';
+        
+        // Handle the recorded audio
+        mediaRecorder.onstop = () => {
+            if (audioChunks.length === 0) {
+                statusElement.textContent = 'No audio recorded';
+                return;
+            }
+            
+            // Create audio blob (WebM format)
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+            saveAudioFile(audioBlob);
+            
+            // Clean up
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        };
+    }
+    
+    // async function saveAudioFile(blob) {
+    //             const formData = new FormData();
+    //             const timestamp = new Date().toISOString()
+    //                 .replace(/[:.]/g, '-')
+    //                 .replace('T', '_')
+    //                 .substring(0, 19);
+    //             const filename = `recording-${timestamp}.mp3`;
+                
+    //             formData.append('audio', blob, filename);
+                
+    //             try {
+    //                 const response = await fetch('/save-audio', {
+    //                     method: 'POST',
+    //                     body: formData
+    //                 });
+                    
+    //                 if (response.ok) {
+    //                     console.log(`Audio saved as ${filename}`);
+    //                 } else {
+    //                     console.error('Failed to save audio');
+    //                 }
+    //             } catch (error) {
+    //                 console.error('Error:', error);
+    //             }
+    //         }
+
+    async function saveAudioFile(blob) {
+    const formData = new FormData();
+    const timestamp = new Date().toISOString()
+        .replace(/[:.]/g, '-')
+        .replace('T', '_')
+        .substring(0, 19);
+    const filename = `recording-${timestamp}.mp3`;
+
+    formData.append('audio', blob, filename);
+
+    try {
+        const response = await fetch('/save-audio', {
+            method: 'POST',
+            body: formData
+        });
+
+        const text = await response.text(); // server থেকে যেটা ফিরবে
+        if (response.ok) {
+            console.log(`✅ Audio saved as ${filename}`);
+            console.log('Server response:', text);
+        } else {
+            console.error('❌ Failed to save audio:', text);
+        }
+    } catch (error) {
+        console.error('⚠️ Error:', error);
+    }
+}
+
+
+
+    </script>
+
+
+
+       
+</body>
+</html>
+
+
