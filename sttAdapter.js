@@ -1,5 +1,6 @@
 // sttAdapter.js
 const { execFile } = require('child_process');
+require('dotenv').config();
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
@@ -24,7 +25,11 @@ async function transcribeToText_LocalWhisper({ filePath, mime, language = 'en' }
     '--output_dir', outDir,
   ];
 
-  const cmd = process.platform === 'win32' ? 'whisper.exe' : 'whisper';
+  // const cmd = process.platform === 'win32' ? 'whisper.exe' : 'whisper';
+  const WHISPER_BIN =
+  process.env.WHISPER_BIN ||
+  (process.platform === 'win32' ? 'whisper.exe' : 'whisper');
+  const cmd = WHISPER_BIN;
 
   const transcriptPath = () => {
     const base = path.basename(filePath);
@@ -33,7 +38,7 @@ async function transcribeToText_LocalWhisper({ filePath, mime, language = 'en' }
   };
 
   const runWhisper = () => new Promise((resolve, reject) => {
-    execFile(cmd, args, { timeout: 120000 }, (err, stdout, stderr) => {
+    execFile(cmd, args, { timeout: 12000000 }, (err, stdout, stderr) => {
       if (err) return reject(err);
       resolve({ stdout, stderr });
     });

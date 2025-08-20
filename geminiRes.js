@@ -1,14 +1,22 @@
+// const fetch = require('node-fetch');
+// const { GEMINI_API_KEY } = require('./config');
+
 // geminiRes.js
-const fetch = require('node-fetch');
-const { GEMINI_API_KEY } = require('./config');
+const { GoogleGenerativeAI } = require( "@google/generative-ai");
+const dotenv = require("dotenv");
 
-/*
-  This uses a generic fetch to the Gemini API endpoint.
-  Replace MODEL_NAME and endpoint path if needed per your Gemini SDK/version.
-  Keep temperature low for consistent, concise feedback.
-*/
+dotenv.config();
 
-const MODEL_NAME = 'gemini-1.5-flash'; // or the free model you plan to use
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+  throw new Error("Missing GEMINI_API_KEY in environment variables");
+}
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+// Free/fast model: gemini-1.5-flash (use gemini-1.5-pro for more quality, slower)
+const MODEL_NAME = "gemini-1.5-flash";
 const MAX_TOKENS = 512;
 const TEMPERATURE = 0.2;
 
@@ -31,50 +39,25 @@ Transcript:
 }
 
 async function getGeminiFeedback(transcript) {
-  if (!GEMINI_API_KEY) {
-    throw new Error('Missing GEMINI_API_KEY');
-  }
+  try {
+    const prompt = buildPrompt(transcript);
 
-  const prompt = buildPrompt(transcript);
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-  // Example REST call structure – adjust to your Gemini endpoint format
-  const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(MODEL_NAME) + ':generateContent?key=' + encodeURIComponent(GEMINI_API_KEY), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        { parts: [{ text: prompt }] }
-      ],
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: TEMPERATURE,
         maxOutputTokens: MAX_TOKENS,
-      }
-    }),
-    // timeout can be handled via AbortController if desired
-  });
+      },
+    });
 
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error('Gemini API error: ' + resp.status + ' ' + text);
+    const responseText = result.response.text();
+    return responseText || "I could not generate feedback right now. Please try again.";
+  } catch (err) {
+    console.error("Gemini API error:", err);
+    return "Something went wrong while generating feedback.";
   }
-
-  const data = await resp.json();
-
-  // Extract plain text safely based on typical Gemini response structure
-  // Adjust path if SDK/endpoint differs
-  const candidates = data.candidates || [];
-  const first = candidates[0];
-  let output = '';
-
-  if (first && first.content && Array.isArray(first.content.parts)) {
-    output = first.content.parts.map(p => p.text || '').join(' ').trim();
-  }
-
-  if (!output) {
-    output = 'I could not generate feedback right now. Please try again.';
-  }
-
-  return output;
 }
 
 module.exports = { getGeminiFeedback };
